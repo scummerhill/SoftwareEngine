@@ -1,0 +1,408 @@
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+#include <math.h>
+#include <stdbool.h>
+
+enum PlayerType {OGRE,HUMAN,ELF,WIZARD};
+enum SlotType {LEVEL_GROUND,HILL,CITY};
+
+struct Player newOgre(char playerName[50]);
+struct Player newHuman(char playerName[50]);
+struct Player newElf(char playerName[50]);
+struct Player newWizard(char playerName[50]);
+void createPlayers();
+void populateSlots();
+void addPlayersToRandomSlot();
+void beginGame();
+const char* getSlotName(enum SlotType slotType);
+int isNotUniquePosition(int position);
+void attackMode(int playerNumber);
+void moveToNextSlot(struct Player * player);
+void moveToPreviousSlot(struct Player * player);
+void alterStatsBasedOnPosition(struct Player * attacker, struct Player * attacked);
+void attackPlayer(struct Player * attacker, struct Player * attacked);
+void printPlayersNameTypeAndSlotPosition();
+
+
+struct Player{
+    enum PlayerType type;
+    char name[50];
+    double lifePoints;
+    int smartness;
+    int strength;
+    int magicSkills;
+    int luck;
+    int dexterity;
+    int currentPosition;
+};
+
+struct Player players[6];
+int slots[20];
+int numberOfPlayers;
+int numberOfSlots;
+
+int main()
+{
+    setvbuf(stdout, NULL, _IONBF, 0); //Need to have this for printing to eclipse console
+
+    createPlayers();
+
+    populateSlots();
+
+    addPlayersToRandomSlot();
+
+    beginGame();
+
+    printPlayersNameTypeAndSlotPosition();
+
+}
+
+void beginGame(){
+    for(int i = 0; i < numberOfPlayers; i++){
+        char playerChoice;
+        int playerNum = i + 1;
+        printf("\nIt is Player %d's turn (%s). Do you want to move to the next slot [n], the previous slot [p], or attack [a]? ", playerNum, players[i].name);
+        scanf("%s", &playerChoice);
+        printf("Player* number = %d\n", i);
+        switch(playerChoice){
+        case 'a': attackMode(i); break;
+        case 'n': moveToNextSlot(&players[i]); break;
+        case 'p': moveToPreviousSlot(&players[i]);break;
+
+        }
+    }
+}
+
+void createPlayers(){
+    printf("How many players do you want to create [Max 6]? ");
+    scanf("%d", &numberOfPlayers);
+
+    if(numberOfPlayers > 6 || numberOfPlayers < 0){
+        printf("Please enter a value a number");
+        exit(0);
+    }
+
+    //Player creation is here.
+    //User enters name and type, then the values for each type are generated
+    int i;
+    for(i = 0; i < numberOfPlayers; i++){
+        char playerName[50];
+        int playerType;
+        struct Player player;
+
+        printf("Enter name for Player %d : ", i + 1);
+        scanf("%s", playerName);
+        printf("Enter type for %s [0 = Ogre, 1 = Human, 2 = Elf, 3 = Wizard] : ", playerName);
+        scanf("%d", &playerType);
+
+        switch(playerType){
+        case OGRE:
+            player = newOgre(playerName);
+            break;
+        case HUMAN:
+            player = newHuman(playerName);
+            break;
+        case ELF:
+            player = newElf(playerName);
+            break;
+        case WIZARD:
+            player = newWizard(playerName);
+            break;
+        default:
+            printf("Please choose a valid type");
+            exit(0);
+        }
+        players[i] = player;
+    }
+}
+
+
+//This prints out the state of the players based on assignment criteria
+void printPlayersNameTypeAndSlotPosition(){
+    for(int j = 0; j < numberOfPlayers; j++){
+        printf("%s (%s, %f)\n", players[j].name, getSlotName(slots[players[j].currentPosition]), players[j].lifePoints);
+    }
+}
+
+
+struct Player newOgre(char playerName[50]){
+    struct Player player;
+    strcpy(player.name,playerName);
+    player.lifePoints = 100.0;
+    player.type = OGRE;
+    player.magicSkills = 0;
+    player.smartness = rand() % 20;
+    player.strength = (rand() % 20) + 80;
+    player.dexterity = (rand() % 20) + 80;
+    player.luck = rand() % (50 - player.smartness);
+    return player;
+
+}
+
+struct Player newHuman(char playerName[50]){
+    struct Player player;
+    strcpy(player.name,playerName);
+    player.lifePoints = 100.0;
+    player.type = HUMAN;
+    int totalPoints = 300;
+
+    player.magicSkills = rand() % 100;
+    totalPoints -= player.magicSkills;
+
+    player.smartness = rand() % 100;
+    totalPoints -= player.smartness;
+
+    if(totalPoints < 100 && totalPoints > -1){
+        player.strength = (rand() % totalPoints);
+        totalPoints -= player.strength;
+        if(totalPoints < 0){
+            totalPoints = 0;
+        }
+    } else {
+        player.strength = (rand() % 100);
+    }
+
+    if(totalPoints < 100 && totalPoints > -1){
+        player.dexterity = (rand() % totalPoints);
+        totalPoints -= player.dexterity;
+        if(totalPoints < 0){
+            totalPoints = 0;
+        }
+    } else {
+        player.dexterity = (rand() % 100);
+    }
+
+    if(totalPoints < 100 && totalPoints > -1){
+        player.luck = (rand() % totalPoints);
+        totalPoints -= player.luck;
+        if(totalPoints < 0){
+            totalPoints = 0;
+        }
+    } else {
+        player.luck = (rand() % 100);
+    }
+
+    if(totalPoints < 100 && totalPoints > -1){
+        player.magicSkills = (rand() % totalPoints);
+        totalPoints -= player.magicSkills;
+        if(totalPoints < 0){
+            totalPoints = 0;
+        }
+    } else {
+        player.magicSkills = (rand() % 100);
+    }
+
+    return player;
+
+}
+
+struct Player newElf(char playerName[50]){
+    struct Player player;
+    strcpy(player.name,playerName);
+    player.lifePoints = 100.0;
+    player.type = ELF;
+    player.magicSkills = (rand() % 30) + 50;
+    player.smartness = (rand() % 30) + 70;
+    player.strength = rand() % 50;
+    player.dexterity = (rand() % 20) + 80;
+    player.luck = (rand() % 40) + 60;
+    return player;
+}
+
+struct Player newWizard(char playerName[50]){
+    struct Player player;
+    strcpy(player.name,playerName);
+    player.lifePoints = 100.0;
+    player.type = WIZARD;
+    player.magicSkills = (rand() % 80) + 20;
+    player.smartness = (rand() % 10) + 90;
+    player.strength = (rand() % 20);
+    player.dexterity = (rand() % 100);
+    player.luck = (rand() % 50) + 50;
+    return player;
+}
+
+const char* getPlayerTypeName(enum PlayerType playerTypes)
+{
+    switch (playerTypes)
+    {
+    case OGRE: return "Ogre";
+    case WIZARD: return "Wizard";
+    case HUMAN: return "Human";
+    case ELF: return "Elf";
+    default: return "";
+    }
+}
+
+const char* getSlotName(enum SlotType slotType)
+{
+    switch (slotType)
+    {
+    case LEVEL_GROUND: return "Level Ground";
+    case HILL: return "Hill";
+    case CITY: return "City";
+    default: return "";
+    }
+}
+
+//Generate the slots using a random number generator
+void populateSlots(){
+    printf("How many slots do you want to create [Max 20]? ");
+    scanf("%d", &numberOfSlots);
+    int i;
+    for(i = 0; i < numberOfSlots; i++){
+        slots[i] = rand() % 3;
+    }
+}
+
+void addPlayersToRandomSlot(){
+    int i;
+    for(i = 0; i < numberOfPlayers; i ++){
+        int position;
+
+        //Checks to make sure the position is unique
+        do {
+            position = rand() % numberOfSlots;
+        } while(isNotUniquePosition(position) != 0);
+        players[i].currentPosition = position;
+    }
+}
+
+int isNotUniquePosition(int position){
+    int i;
+    for(i = 0; i < numberOfPlayers; i++){
+        if(position == players[i].currentPosition){
+            return 1;
+        }
+    }
+    return 0;
+}
+
+void attackMode(int playerNumber){
+    bool isEnemyBehindPlayer = false;
+    bool isEnemyInFrontOfPlayer = false;
+
+    printf("You have chosen to attack!\n");
+
+    int i;
+    for(i = 0; i < numberOfPlayers; i++){
+        if(players[playerNumber].currentPosition -1 == players[i].currentPosition){
+            printf("There is an enemy behind you. Players name is %s and his position is %d. Your position is %d\n", players[i].name, players[i].currentPosition, players[playerNumber].currentPosition);
+            isEnemyBehindPlayer = true;
+        } else if(players[playerNumber].currentPosition +1 == players[i].currentPosition){
+            printf("There is an enemy in front of you. Players name is %s and his position is %d. Your position is %d\n", players[i].name, players[i].currentPosition, players[playerNumber].currentPosition);
+            isEnemyInFrontOfPlayer = true;
+        }
+    }
+
+    //Checks for players in front and behind you. User must choose which Player* to attack
+    //The Player* that is not chosen gets set to false
+    if(isEnemyBehindPlayer && isEnemyInFrontOfPlayer){
+        printf("There is a Player in front and behind you. Do you want to attack the Player behind [b] or in front [f] of you?");
+        char attackPlayerChoice;
+        scanf("%s", &attackPlayerChoice);
+
+        switch (attackPlayerChoice) {
+        case 'b': isEnemyInFrontOfPlayer = false; break;
+        case 'f': isEnemyBehindPlayer = false; break;
+        default: printf("Wrong input selected, quitting game.\n");
+        exit(0);
+        }
+    }
+
+
+    if(isEnemyBehindPlayer){
+        printf("You attack the player behind you.\n");
+        alterStatsBasedOnPosition(&players[playerNumber], &players[playerNumber - 1]);
+        attackPlayer(&players[playerNumber], &players[playerNumber - 1]);
+    } else if (isEnemyInFrontOfPlayer){
+        printf("You attack the player in front of you.\n");
+        alterStatsBasedOnPosition(&players[playerNumber], &players[playerNumber + 1]);
+        attackPlayer(&players[playerNumber], &players[playerNumber + 1]);
+    } else {
+        printf("There is no player to attack! Skipping turn.\n");
+    }
+
+}
+
+//This is where the players stats are changed based on the terrain they currently are on
+void alterStatsBasedOnPosition(struct Player * attacker, struct Player * attacked){
+
+    if(slots[attacker->currentPosition] == HILL){
+        if(attacker->dexterity < 50){
+            attacker->strength -= 10;
+            if(attacker->strength < 0){
+                attacker->strength = 0;
+            }
+        } else {
+            attacker->strength += 10;
+        }
+    } else if(slots[attacker->currentPosition] == CITY){
+        if(attacker->smartness <= 50){
+            attacker->dexterity -= 10;
+            if(attacker->dexterity < 0){
+                attacker->dexterity = 0;
+            }
+        } else {
+            attacker->magicSkills += 10;
+        }
+    }
+
+    if(slots[attacked->currentPosition] == HILL){
+        if(attacked->dexterity < 50){
+            attacked->strength -= 10;
+            if(attacked->strength < 0){
+                attacked->strength = 0;
+            }
+        } else {
+            attacked->strength += 10;
+        }
+    } else if(slots[attacked->currentPosition] == CITY){
+        if(attacked->smartness <= 50){
+            attacked->dexterity -= 10;
+        } else {
+            attacked->magicSkills += 10;
+        }
+    }
+
+}
+
+
+
+//This is where the life points go down for the attacker/attacked based on strength
+void attackPlayer(struct Player * attacker, struct Player * attacked){
+    if(attacked->strength <= 70){
+        printf("%f\n", (0.5 * attacker->strength));
+        attacked->lifePoints -= (0.5 * attacker->strength);
+    } else {
+        printf("%f\n", (0.5 * attacker->strength));
+        attacker->lifePoints -= (0.3 * attacked->strength);
+    }
+}
+
+//Checks for empty slot to the right of the player, and will move it into that slot if it is free
+void moveToNextSlot(struct Player * player){
+
+    if (player->currentPosition +1 > numberOfSlots -1){
+        printf("Cannot move player, you are at the end of the map. Skipping turn.\n");
+    }else if(isNotUniquePosition(player->currentPosition +1)){
+        printf("Cannot move player, enemy is in position %d. Skipping turn.\n", player->currentPosition +1);
+    } else{
+        printf("Moving player to position %d\n", player->currentPosition + 1);
+        player->currentPosition += 1;
+    }
+}
+
+
+//Checks that previous slot is free/valid, and moves player to that position
+void moveToPreviousSlot(struct Player * player){
+    if (player->currentPosition -1 < 0){
+        printf("Cannot move Player*, you are at the end of the map. Skipping turn.\n");
+    } else if(isNotUniquePosition(player->currentPosition -1)){
+        printf("Cannot move Player*, enemy is in position %d. Skipping turn.\n", player->currentPosition -1);
+    }else {
+        printf("Moving Player* to position %d\n", player->currentPosition - 1);
+        player->currentPosition -= 1;
+    }
+}
